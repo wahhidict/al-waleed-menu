@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم مطعم الوليد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #121212; --card-color: #1e1e1e; --gold: #d4af37; --text-main: #fff; --text-muted: #a0a0a0; --border-color: #2a2a2a; --danger: #dc3545; --success: #28a745; --edit: #0dcaf0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1, h2, h3 { color: var(--gold); text-align: center; margin-bottom: 20px; }
+        #login-section { max-width: 400px; margin: 80px auto; background: var(--card-color); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #2a2a2a; color: white; font-family: 'Cairo', sans-serif; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-family: 'Cairo', sans-serif; cursor: pointer; }
+        .btn-primary { background: var(--gold); color: #121212; }
+        .btn-edit { background: var(--edit); color: #121212; width: auto; padding: 8px 15px; font-size: 0.9em; }
+        .btn-danger { background: var(--danger); color: white; width: auto; padding: 8px 15px; font-size: 0.9em; }
+        .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 8px 15px; }
+        #dashboard-section { display: none; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .tab-btn { padding: 12px 25px; border-radius: 25px; border: 2px solid var(--border-color); background: transparent; color: var(--text-muted); font-family: 'Cairo', sans-serif; font-size: 1em; font-weight: 600; cursor: pointer; width: auto; }
+        .tab-btn.active { background: var(--gold); color: #121212; border-color: var(--gold); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .add-form { background: var(--card-color); padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--border-color); }
+        .items-list { display: flex; flex-direction: column; gap: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; background: var(--card-color); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .item-info { display: flex; align-items: center; gap: 15px; }
+        .item-info img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+        .item-actions { display: flex; gap: 10px; }
+        .message { padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; display: none; }
+        .message.success { background: rgba(40, 167, 69, 0.2); color: var(--success); display: block; }
+        .message.error { background: rgba(220, 53, 69, 0.2); color: var(--danger); display: block; }
+        .image-preview-box { display: none; margin-top: 10px; text-align: center; }
+        .image-preview-box img { max-width: 100px; max-height: 100px; border-radius: 8px; border: 1px solid var(--gold); }
+        .settings-section-title { color: var(--gold); font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; border-right: 4px solid var(--gold); padding-right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-section">
+        <h2>تسجيل دخول الأدمن</h2>
+        <div id="login-message" class="message"></div>
+        <div class="form-group"><label>الإيميل</label><input type="email" id="email" placeholder="admin@alwaleed.com"></div>
+        <div class="form-group"><label>كلمة السر</label><input type="password" id="password" placeholder="********"></div>
+        <button class="btn-primary" onclick="login()">دخول</button>
+    </div>
+
+    <div id="dashboard-section">
+        <div class="dashboard-header">
+            <h2>إدارة مطعم الوليد</h2>
+            <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('items', this)">🍽️ الأصناف</button>
+            <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ إعدادات المطعم</button>
+        </div>
+        <div id="admin-message" class="message"></div>
+
+        <div id="tab-items" class="tab-content active">
+            <div class="add-form">
+                <h3 id="form-title">إضافة صنف جديد</h3>
+                <div class="form-group"><label>القسم</label><input type="text" id="item-category" placeholder="اسم القسم"></div>
+                <div class="form-group"><label>اسم الطبق</label><input type="text" id="item-name" placeholder="اسم الطبق"></div>
+                <div class="form-group"><label>السعر (ل.س)</label><input type="number" id="item-price" placeholder="مثال: 25000"></div>
+                <div class="form-group"><label>الوصف (اختياري)</label><input type="text" id="item-desc" placeholder="وصف قصير"></div>
+                <div class="form-group" style="background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed var(--gold);">
+                    <label style="color: var(--gold); font-weight: bold;">📸 صورة الطبق</label>
+                    <label style="font-size: 0.9em; color: var(--text-muted);">الخيار 1: اختر صورة من جوالك</label>
+                    <input type="file" id="item-image-file" accept="image/*" onchange="handleImageUpload(event)" style="padding: 8px; background: #2a2a2a;">
+                    <div id="image-preview" class="image-preview-box"><p style="color: var(--success); font-size: 0.8em;">✅ تم اختيار الصورة</p><img id="preview-img" src="" alt="معاينة"></div>
+                    <label style="font-size: 0.9em; color: var(--text-muted); margin-top: 10px;">الخيار 2: أو الصق رابط صورة</label>
+                    <input type="text" id="item-image" placeholder="https://i.postimg.cc/xxxxx/image.jpg">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" id="submit-btn" onclick="saveItem()">إضافة الصنف</button>
+                    <button class="btn-logout" id="cancel-btn" onclick="cancelEdit()" style="display:none; color: #fff; border-color: #fff;">إلغاء</button>
+                </div>
+            </div>
+            <h3>الأصناف الحالية</h3>
+            <div class="items-list" id="items-list"></div>
+        </div>
+
+        <div id="tab-settings" class="tab-content">
+            <div class="add-form">
+                <h3>تعديل معلومات المطعم</h3>
+                <div class="settings-section-title">🏪 المعلومات الأساسية</div>
+                <div class="form-group"><label>اسم المطعم</label><input type="text" id="set-name" value="مطعم الوليد"></div>
+                <div class="form-group"><label>الفرع</label><input type="text" id="set-subtitle" value="عدرا الصناعية - قطاع أول هندسية"></div>
+                <div class="form-group"><label>حالة المطعم</label><input type="text" id="set-status" value="مفتوح الآن • يوجد توصيل دليفري"></div>
+                <div class="settings-section-title">📞 التواصل</div>
+                <div class="form-group"><label>رقم الواتساب (للطلب - بدون + وبدون أصفار)</label><input type="text" id="set-whatsapp" value="963949574237"></div>
+                <div class="form-group"><label>رقم الواتساب (للعرض)</label><input type="text" id="set-whatsapp-display" value="0949 574 237"></div>
+                <div class="form-group"><label>رقم الهاتف الأرضي (للعرض)</label><input type="text" id="set-phone" value="011 585 3701"></div>
+                <div class="form-group"><label>رقم الهاتف للاتصال المباشر</label><input type="text" id="set-phone-call" value="+963115853701"></div>
+                <div class="settings-section-title">📍 الموقع</div>
+                <div class="form-group"><label>العنوان</label><input type="text" id="set-address" value="عدرا الصناعية - قطاع أول هندسية - السوق التجاري - جانب ماركت الوليد"></div>
+                <div class="form-group"><label>رابط الخريطة</label><input type="text" id="set-map" value="https://maps.google.com/?q=عدرا+الصناعية+دمشق"></div>
+                <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px;">💾 حفظ الإعدادات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    const firebaseConfig = {
+        apiKey: "AIzaSyAi_NnPfUwHPVQcmHMm9vKIYjbJWuzBqms",
+        authDomain: "al-waleed-menu.firebaseapp.com",
+        projectId: "al-waleed-menu",
+        storageBucket: "al-waleed-menu.firebasestorage.app",
+        messagingSenderId: "93044767292",
+        appId: "1:93044767292:web:5f34dd396dd50c82bf6139"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginSection = document.getElementById('login-section');
+    const dashboardSection = document.getElementById('dashboard-section');
+    const loginMessage = document.getElementById('login-message');
+    const adminMessage = document.getElementById('admin-message');
+    const itemsList = document.getElementById('items-list');
+    let editingItemId = null;
+    let uploadedImageBase64 = null;
+
+    // المنيو الافتراضي (يستخدم للتعبئة التلقائية فقط إذا كانت القاعدة فاضية)
+    const defaultMenu = [
+        { cat: "قسم المشاوي", name: "فروج مشوي على الفحم", price: 45000, desc: "فروج كامل مشوي على الفحم", img: "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "شيش طاووق مشوي", price: 30000, desc: "قطع دجاج متبلة مشوية", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "شيش طاووق أبيض", price: 32000, desc: "شيش طاووق بالصوص الأبيض", img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "كباب دجاج مشوي", price: 28000, desc: "أسياخ كباب دجاج مفروم", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "جناحات مشوية", price: 25000, desc: "أجنحة دجاج متبلة ومشوية", img: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "كستا مشوية", price: 30000, desc: "كستا دجاج مشوية", img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "كباب غنم", price: 40000, desc: "كباب لحم غنم مشوي", img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "شقف غنم", price: 45000, desc: "قطع لحم غنم مشوية", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "كبة مشوية", price: 20000, desc: "كبة برغل محشوة لحم", img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80" },
+        { cat: "قسم المشاوي", name: "معجوقة دجاج فاخرة", price: 35000, desc: "معجوقة دجاج فاخرة", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "فول باللبن", price: 15000, desc: "فول مدمس مع لبن", img: "https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "فول بالزيت والثوم", price: 12000, desc: "فول مدمس مع زيت وثوم", img: "https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "حمص حب باللبن", price: 15000, desc: "حمص حب مع لبن", img: "https://images.unsplash.com/photo-1637943943125-e8c1a5a1b9a0?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "حمص حب بالزيت والثوم", price: 12000, desc: "حمص حب مع زيت وثوم", img: "https://images.unsplash.com/photo-1637943943125-e8c1a5a1b9a0?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "مسيحة ناعمة", price: 15000, desc: "مسيحة ناعمة بالطحينة", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "فتة بالسمن الحيواني", price: 20000, desc: "فتة حمص مع سمن حيواني", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "فتة بالفقسة", price: 22000, desc: "فتة مع فقسة", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "متبل باذنجان مشوي", price: 13000, desc: "متبل باذنجان مشوي", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "بيض مسلوق", price: 10000, desc: "بيض مسلوق", img: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "بيض مقلي", price: 12000, desc: "بيض مقلي", img: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80" },
+        { cat: "قسم الفطور الدمشقي", name: "بيض ومرتديلا", price: 15000, desc: "بيض مع مرتديلا", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش بطاطا سمون", price: 10000, desc: "بطاطا مقلية مع صوص", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش بطاطا تشيز", price: 12000, desc: "بطاطا مقلية مع جبنة", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش فلافل عادي", price: 8000, desc: "فلافل مع خضار وطحينة", img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش فلافل اكسترا", price: 12000, desc: "فلافل مع جبنة ومخلل", img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش سودة دجاج", price: 15000, desc: "سودة دجاج مع صوص", img: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش بيض مقلي", price: 10000, desc: "بيض مقلي مع خضار", img: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش مرتديلا و بيض", price: 13000, desc: "مرتديلا مع بيض", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش مرتديلا و قشقوان", price: 15000, desc: "مرتديلا مع جبنة قشقوان", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش كريسبي", price: 18000, desc: "دجاج كريسبي مقرمش", img: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش طاووق", price: 17000, desc: "شيش طاووق مع ثومية", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش كباب دجاج", price: 17000, desc: "كباب دجاج مشوي", img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش لبنة وزيتون", price: 8000, desc: "لبنة مع زيتون", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
+        { cat: "قسم السندويش", name: "سندويش لبنة بالزيت البلدي", price: 10000, desc: "لبنة مع زيت زيتون بلدي", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" }
+    ];
+
+    function showMessage(element, text, type) {
+        element.textContent = text;
+        element.className = 'message ' + type;
+        setTimeout(() => { element.className = 'message'; }, 4000);
+    }
+
+    window.switchTab = function(tabName, btnElement) {
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        btnElement.classList.add('active');
+    }
+
+    window.login = async function() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try { await signInWithEmailAndPassword(auth, email, password); }
+        catch (error) { showMessage(loginMessage, 'خطأ في الإيميل أو كلمة السر', 'error'); }
+    }
+
+    window.logout = function() { signOut(auth); }
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            loginSection.style.display = 'none';
+            dashboardSection.style.display = 'block';
+            await autoSeedIfEmpty();
+            loadItems();
+            loadSettingsForEdit();
+        } else {
+            loginSection.style.display = 'block';
+            dashboardSection.style.display = 'none';
+        }
+    });
+
+    // دالة التعبئة التلقائية الصامتة (فقط إذا كانت القاعدة فاضية)
+    async function autoSeedIfEmpty() {
+        try {
+            const snapshot = await getDocs(collection(db, "menu"));
+            if (snapshot.empty) {
+                console.log("القاعدة فارغة، جاري إضافة الأصناف الافتراضية...");
+                const batch = writeBatch(db);
+                for (const item of defaultMenu) {
+                    const newDocRef = doc(collection(db, "menu"));
+                    batch.set(newDocRef, {
+                        category: item.cat,
+                        name: item.name,
+                        price: item.price,
+                        description: item.desc,
+                        imageUrl: item.img,
+                        createdAt: new Date()
+                    });
+                }
+                await batch.commit();
+                console.log("تمت إضافة الأصناف الافتراضية بنجاح.");
+            }
+        } catch (error) {
+            console.error("خطأ في التعبئة التلقائية:", error);
+        }
+    }
+
+    window.handleImageUpload = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 600; const MAX_HEIGHT = 600;
+                let width = img.width; let height = img.height;
+                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } }
+                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                uploadedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                document.getElementById('preview-img').src = uploadedImageBase64;
+                document.getElementById('image-preview').style.display = 'block';
+                document.getElementById('item-image').value = '';
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    function resetForm() {
+        document.getElementById('item-category').value = '';
+        document.getElementById('item-name').value = '';
+        document.getElementById('item-price').value = '';
+        document.getElementById('item-desc').value = '';
+        document.getElementById('item-image').value = '';
+        document.getElementById('item-image-file').value = '';
+        document.getElementById('image-preview').style.display = 'none';
+        uploadedImageBase64 = null;
+        editingItemId = null;
+        document.getElementById('form-title').textContent = 'إضافة صنف جديد';
+        document.getElementById('submit-btn').textContent = 'إضافة الصنف';
+        document.getElementById('cancel-btn').style.display = 'none';
+    }
+
+    window.cancelEdit = function() { resetForm(); showMessage(adminMessage, 'تم إلغاء التعديل', 'success'); }
+
+    async function loadItems() {
+        itemsList.innerHTML = '<p style="text-align:center;">جاري التحميل...</p>';
+        const q = query(collection(db, "menu"), orderBy("category"));
+        const querySnapshot = await getDocs(q);
+        itemsList.innerHTML = '';
+        if (querySnapshot.empty) { itemsList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">لا توجد أصناف بعد.</p>'; return; }
+        querySnapshot.forEach((docSnap) => {
+            const item = docSnap.data();
+            const id = docSnap.id;
+            const row = document.createElement('div');
+            row.className = 'item-row';
+            row.innerHTML = `
+                <div class="item-info">
+                    <img src="${item.imageUrl || 'https://via.placeholder.com/50'}" alt="${item.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/50?text=No+Image'">
+                    <div><strong>${item.name}</strong> <span style="color: var(--gold);">(${item.price} ل.س)</span><br><small style="color: var(--text-muted);">${item.category}</small></div>
+                </div>
+                <div class="item-actions">
+                    <button class="btn-edit" onclick="editItem('${id}')">تعديل</button>
+                    <button class="btn-danger" onclick="deleteItem('${id}')">حذف</button>
+                </div>`;
+            itemsList.appendChild(row);
+        });
+    }
+
+    window.editItem = async function(id) {
+        try {
+            const docSnap = await getDoc(doc(db, "menu", id));
+            if (docSnap.exists()) {
+                const item = docSnap.data();
+                document.getElementById('item-category').value = item.category || '';
+                document.getElementById('item-name').value = item.name || '';
+                document.getElementById('item-price').value = item.price || '';
+                document.getElementById('item-desc').value = item.description || '';
+                if (item.imageUrl && item.imageUrl.startsWith('data:image')) {
+                    document.getElementById('item-image').value = 'صورة مرفوعة';
+                    uploadedImageBase64 = item.imageUrl;
+                } else {
+                    document.getElementById('item-image').value = item.imageUrl || '';
+                    uploadedImageBase64 = null;
+                }
+                editingItemId = id;
+                document.getElementById('form-title').textContent = 'تعديل: ' + item.name;
+                document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
+                document.getElementById('cancel-btn').style.display = 'block';
+                document.querySelectorAll('.tab-btn')[0].click();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    window.saveItem = async function() {
+        const category = document.getElementById('item-category').value;
+        const name = document.getElementById('item-name').value;
+        const price = document.getElementById('item-price').value;
+        const description = document.getElementById('item-desc').value;
+        const imageUrlInput = document.getElementById('item-image').value;
+        if (!category || !name || !price) { showMessage(adminMessage, 'يرجى ملء الحقول الإجبارية', 'error'); return; }
+        const finalImage = uploadedImageBase64 || (imageUrlInput !== 'صورة مرفوعة' ? imageUrlInput : '');
+        const itemData = { category, name, price: parseInt(price), description, imageUrl: finalImage };
+        try {
+            if (editingItemId) { await updateDoc(doc(db, "menu", editingItemId), itemData); showMessage(adminMessage, 'تم تعديل الصنف!', 'success'); }
+            else { itemData.createdAt = new Date(); await addDoc(collection(db, "menu"), itemData); showMessage(adminMessage, 'تم إضافة الصنف!', 'success'); }
+            resetForm(); loadItems();
+        } catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }
+    }
+
+    window.deleteItem = async function(id) {
+        if (confirm('تأكيد الحذف؟')) {
+            try { await deleteDoc(doc(db, "menu", id)); showMessage(adminMessage, 'تم الحذف', 'success'); if (editingItemId === id) resetForm(); loadItems(); }
+            catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }
+        }
+    }
+
+    async function loadSettingsForEdit() {
+        try {
+            const docRef = doc(db, "settings", "info");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const s = docSnap.data();
+                document.getElementById('set-name').value = s.name || '';
+                document.getElementById('set-subtitle').value = s.subtitle || '';
+                document.getElementById('set-status').value = s.status || '';
+                document.getElementById('set-whatsapp').value = s.whatsapp || '';
+                document.getElementById('set-whatsapp-display').value = s.whatsappDisplay || '';
+                document.getElementById('set-phone').value = s.phoneDisplay || '';
+                document.getElementById('set-phone-call').value = s.phone || '';
+                document.getElementById('set-address').value = s.address || '';
+                document.getElementById('set-map').value = s.mapUrl || '';
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    window.saveSettings = async function() {
+        const settingsData = {
+            name: document.getElementById('set-name').value,
+            subtitle: document.getElementById('set-subtitle').value,
+            status: document.getElementById('set-status').value,
+            whatsapp: document.getElementById('set-whatsapp').value,
+            whatsappDisplay: document.getElementById('set-whatsapp-display').value,
+            phone: document.getElementById('set-phone-call').value,
+            phoneDisplay: document.getElementById('set-phone').value,
+            address: document.getElementById('set-address').value,
+            mapUrl: document.getElementById('set-map').value
+        };
+        try { await setDoc(doc(db, "settings", "info"), settingsData); showMessage(adminMessage, 'تم حفظ الإعدادات! ✅', 'success'); }
+        catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }
+    }
+</script>
+</body>
+</html>

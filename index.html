@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مطعم الوليد - عدرا الصناعية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #121212; --card-color: #1e1e1e; --gold: #d4af37; --text-main: #fff; --text-muted: #a0a0a0; --border-color: #2a2a2a; --whatsapp: #25D366; --danger: #dc3545; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; padding-bottom: 100px; }
+        .container { max-width: 700px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        h1 { color: var(--gold); font-size: 2.2em; margin-bottom: 8px; }
+        .subtitle { color: var(--text-muted); font-size: 0.95em; }
+        .status { display: inline-block; background-color: #2e7d32; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8em; margin-top: 10px; }
+        .contact-bar { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-bottom: 30px; }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 25px; text-decoration: none; font-weight: 600; font-size: 0.95em; color: white; border: none; cursor: pointer; }
+        .btn-whatsapp { background-color: var(--whatsapp); }
+        .btn-map { background-color: #4285F4; }
+        .menu-section { margin-bottom: 35px; }
+        .section-title { color: var(--gold); font-size: 1.5em; text-align: center; margin-bottom: 20px; position: relative; }
+        .section-title::after { content: ''; display: block; width: 50px; height: 3px; background: var(--gold); margin: 8px auto 0; border-radius: 2px; }
+        .menu-card { display: flex; background-color: var(--card-color); border-radius: 12px; overflow: hidden; margin-bottom: 12px; border: 1px solid transparent; position: relative; }
+        .menu-card:hover { border-color: var(--gold); }
+        .menu-card img { width: 110px; height: 110px; object-fit: cover; flex-shrink: 0; }
+        .menu-card-info { padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; flex-grow: 1; }
+        .menu-card-info h3 { font-size: 1.1em; margin-bottom: 4px; }
+        .menu-card-info p { font-size: 0.82em; color: var(--text-muted); margin-bottom: 8px; }
+        .item-price { color: var(--gold); font-weight: 700; font-size: 1.05em; }
+        .add-btn { position: absolute; bottom: 12px; left: 12px; background: var(--gold); color: #121212; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 1.3em; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .add-btn:hover { background: #e0c060; }
+        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.9em; }
+        .loading { text-align: center; color: var(--gold); font-size: 1.2em; margin-top: 50px; }
+        .cart-float { position: fixed; bottom: 20px; left: 20px; right: 20px; background: var(--gold); color: #121212; border: none; padding: 15px 20px; border-radius: 50px; font-family: 'Cairo', sans-serif; font-weight: 700; font-size: 1.1em; cursor: pointer; display: none; justify-content: space-between; align-items: center; box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4); z-index: 100; max-width: 660px; margin: 0 auto; }
+        .cart-float .cart-count { background: #121212; color: var(--gold); padding: 3px 12px; border-radius: 20px; font-size: 0.9em; }
+        .cart-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); z-index: 200; padding: 20px; overflow-y: auto; }
+        .cart-modal.active { display: block; }
+        .cart-content { max-width: 600px; margin: 20px auto; background: var(--card-color); border-radius: 15px; padding: 20px; border: 1px solid var(--gold); }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .cart-header h2 { color: var(--gold); font-size: 1.5em; }
+        .close-btn { background: var(--danger); color: white; border: none; width: 35px; height: 35px; border-radius: 50%; font-size: 1.2em; cursor: pointer; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; background: #2a2a2a; padding: 12px; border-radius: 10px; margin-bottom: 10px; }
+        .cart-item-info h4 { font-size: 1em; margin-bottom: 3px; }
+        .cart-item-info .cart-item-price { color: var(--gold); font-size: 0.9em; }
+        .quantity-controls { display: flex; align-items: center; gap: 8px; }
+        .qty-btn { background: var(--gold); color: #121212; border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 1em; font-weight: bold; cursor: pointer; }
+        .qty-btn.remove { background: var(--danger); color: white; }
+        .qty-display { color: white; font-weight: 700; min-width: 25px; text-align: center; }
+        .empty-cart { text-align: center; color: var(--text-muted); padding: 30px; }
+        .customer-form { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color); }
+        .customer-form h3 { color: var(--gold); margin-bottom: 15px; font-size: 1.1em; }
+        .customer-form input, .customer-form textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #2a2a2a; color: white; font-family: 'Cairo', sans-serif; margin-bottom: 12px; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--gold); font-size: 1.3em; font-weight: 700; color: var(--gold); }
+        .confirm-btn { width: 100%; background: var(--whatsapp); color: white; border: none; padding: 15px; border-radius: 10px; font-family: 'Cairo', sans-serif; font-size: 1.1em; font-weight: 700; cursor: pointer; margin-top: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1 id="shop-name">مطعم الوليد</h1>
+        <div class="subtitle" id="shop-subtitle">عدرا الصناعية - قطاع أول هندسية</div>
+        <div class="status" id="shop-status">مفتوح الآن • يوجد توصيل دليفري</div>
+    </header>
+    <div class="contact-bar">
+        <a href="https://wa.me/963949574237" id="whatsapp-btn" class="btn btn-whatsapp" target="_blank">📱 اطلب عبر واتساب</a>
+        <a href="https://maps.google.com/?q=عدرا+الصناعية+دمشق" id="map-btn" class="btn btn-map" target="_blank">📍 الموقع على الخريطة</a>
+    </div>
+    <div id="menu-container"><div class="loading">جاري تحميل المنيو... ⏳</div></div>
+    <footer>
+        <div id="footer-address">📍 عدرا الصناعية - قطاع أول هندسية - السوق التجاري - جانب ماركت الوليد</div>
+        <div>📞 <a href="tel:+963115853701" id="footer-phone" style="color: var(--gold);">011 585 3701</a></div>
+    </footer>
+</div>
+
+<button class="cart-float" id="cart-float" onclick="openCart()">
+    <span>🛒 عرض السلة</span>
+    <span class="cart-count" id="cart-count">0</span>
+</button>
+
+<div class="cart-modal" id="cart-modal">
+    <div class="cart-content">
+        <div class="cart-header">
+            <h2>🛒 سلة الطلبات</h2>
+            <button class="close-btn" onclick="closeCart()">✕</button>
+        </div>
+        <div id="cart-items-container"></div>
+        <div class="customer-form" id="customer-form" style="display: none;">
+            <h3>📝 معلومات التوصيل</h3>
+            <input type="text" id="customer-name" placeholder="الاسم الكامل *">
+            <input type="tel" id="customer-phone" placeholder="رقم الهاتف *">
+            <textarea id="customer-address" rows="2" placeholder="العنوان بالتفصيل *"></textarea>
+        </div>
+        <div class="total-row" id="total-row" style="display: none;">
+            <span>الإجمالي:</span>
+            <span id="cart-total">0 ل.س</span>
+        </div>
+        <button class="confirm-btn" id="confirm-btn" onclick="sendOrder()" style="display: none;">✅ تأكيد الطلب عبر واتساب</button>
+    </div>
+</div>
+
+<script type="module">
+    const firebaseConfig = {
+        apiKey: "AIzaSyAi_NnPfUwHPVQcmHMm9vKIYjbJWuzBqms",
+        authDomain: "al-waleed-menu.firebaseapp.com",
+        projectId: "al-waleed-menu",
+        storageBucket: "al-waleed-menu.firebasestorage.app",
+        messagingSenderId: "93044767292",
+        appId: "1:93044767292:web:5f34dd396dd50c82bf6139"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const menuContainer = document.getElementById('menu-container');
+    let restaurantWhatsApp = "963949574237";
+    let restaurantName = "مطعم الوليد";
+    let cart = [];
+
+    async function loadSettings() {
+        try {
+            const docRef = doc(db, "settings", "info");
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const s = docSnap.data();
+                restaurantName = s.name || 'مطعم الوليد';
+                restaurantWhatsApp = s.whatsapp || '963949574237';
+                document.getElementById('shop-name').textContent = restaurantName;
+                document.getElementById('shop-subtitle').textContent = s.subtitle || 'عدرا الصناعية - قطاع أول هندسية';
+                document.getElementById('shop-status').textContent = s.status || 'مفتوح الآن • يوجد توصيل دليفري';
+                document.getElementById('whatsapp-btn').href = `https://wa.me/${restaurantWhatsApp}`;
+                document.getElementById('map-btn').href = s.mapUrl || 'https://maps.google.com/?q=عدرا+الصناعية+دمشق';
+                document.getElementById('footer-address').textContent = '📍 ' + (s.address || 'عدرا الصناعية - قطاع أول هندسية - السوق التجاري');
+                const phoneLink = document.getElementById('footer-phone');
+                phoneLink.textContent = s.phoneDisplay || '011 585 3701';
+                phoneLink.href = `tel:${s.phoneCall || '+963115853701'}`;
+            }
+        } catch (error) { console.error(error); }
+    }
+
+    async function loadMenu() {
+        try {
+            const q = query(collection(db, "menu"), orderBy("category"));
+            const querySnapshot = await getDocs(q);
+            if (querySnapshot.empty) { menuContainer.innerHTML = '<div class="loading">المنيو فارغ حالياً. جاري التحديث...</div>'; return; }
+            let currentCategory = "";
+            let htmlContent = "";
+            querySnapshot.forEach((docSnap) => {
+                const item = docSnap.data();
+                const id = docSnap.id;
+                if (item.category !== currentCategory) {
+                    if (currentCategory !== "") { htmlContent += `</div></div>`; }
+                    currentCategory = item.category;
+                    htmlContent += `<div class="menu-section"><h2 class="section-title">${currentCategory}</h2><div class="menu-list">`;
+                }
+                htmlContent += `
+                    <div class="menu-card">
+                        <img src="${item.imageUrl || 'https://via.placeholder.com/110'}" alt="${item.name}" onerror="this.onerror=null; this.src='https://via.placeholder.com/110?text=No+Image'">
+                        <div class="menu-card-info">
+                            <h3>${item.name}</h3>
+                            <p>${item.description || ''}</p>
+                            <div class="item-price">${item.price} ل.س</div>
+                        </div>
+                        <button class="add-btn" onclick='addToCart(${JSON.stringify({id: id, name: item.name, price: item.price})})' title="أضف للسلة">+</button>
+                    </div>`;
+            });
+            if (currentCategory !== "") { htmlContent += `</div></div>`; }
+            menuContainer.innerHTML = htmlContent;
+        } catch (error) { console.error(error); menuContainer.innerHTML = '<div class="loading">حدث خطأ.</div>'; }
+    }
+
+    window.addToCart = function(item) {
+        const existing = cart.find(i => i.id === item.id);
+        if (existing) { existing.quantity++; } else { cart.push({ ...item, quantity: 1 }); }
+        updateCartUI();
+    };
+
+    function updateCartUI() {
+        const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+        const totalPrice = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        document.getElementById('cart-count').textContent = totalItems;
+        document.getElementById('cart-float').style.display = totalItems > 0 ? 'flex' : 'none';
+        document.getElementById('cart-total').textContent = totalPrice.toLocaleString() + ' ل.س';
+    }
+
+    window.openCart = function() { renderCartItems(); document.getElementById('cart-modal').classList.add('active'); document.body.style.overflow = 'hidden'; };
+    window.closeCart = function() { document.getElementById('cart-modal').classList.remove('active'); document.body.style.overflow = 'auto'; };
+
+    function renderCartItems() {
+        const container = document.getElementById('cart-items-container');
+        if (cart.length === 0) {
+            container.innerHTML = '<div class="empty-cart">🛒 السلة فارغة</div>';
+            document.getElementById('customer-form').style.display = 'none';
+            document.getElementById('total-row').style.display = 'none';
+            document.getElementById('confirm-btn').style.display = 'none';
+            return;
+        }
+        container.innerHTML = '';
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'cart-item';
+            div.innerHTML = `
+                <div class="cart-item-info">
+                    <h4>${item.name}</h4>
+                    <div class="cart-item-price">${item.price.toLocaleString()} ل.س × ${item.quantity} = ${(item.price * item.quantity).toLocaleString()} ل.س</div>
+                </div>
+                <div class="quantity-controls">
+                    <button class="qty-btn remove" onclick="decreaseQty('${item.id}')">−</button>
+                    <span class="qty-display">${item.quantity}</span>
+                    <button class="qty-btn" onclick="increaseQty('${item.id}')">+</button>
+                </div>`;
+            container.appendChild(div);
+        });
+        document.getElementById('customer-form').style.display = 'block';
+        document.getElementById('total-row').style.display = 'flex';
+        document.getElementById('confirm-btn').style.display = 'block';
+    }
+
+    window.increaseQty = function(id) { const item = cart.find(i => i.id === id); if (item) item.quantity++; updateCartUI(); renderCartItems(); };
+    window.decreaseQty = function(id) {
+        const index = cart.findIndex(i => i.id === id);
+        if (index > -1) { if (cart[index].quantity > 1) cart[index].quantity--; else cart.splice(index, 1); }
+        updateCartUI(); renderCartItems();
+    };
+
+    window.sendOrder = function() {
+        const name = document.getElementById('customer-name').value.trim();
+        const phone = document.getElementById('customer-phone').value.trim();
+        const address = document.getElementById('customer-address').value.trim();
+        if (!name || !phone || !address) { alert('⚠️ يرجى ملء جميع الحقول'); return; }
+        const totalPrice = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+        let message = `🛒 *طلب جديد من ${restaurantName}*\n\n👤 *الاسم:* ${name}\n📱 *الهاتف:* ${phone}\n📍 *العنوان:* ${address}\n\n📋 *الأصناف:*\n━━━━━━━━━━━━━━━\n`;
+        cart.forEach(item => { message += `▪️ ${item.quantity} × ${item.name} = ${(item.price * item.quantity).toLocaleString()} ل.س\n`; });
+        message += `━━━━━━━━━━━━━━━\n💰 *الإجمالي:* ${totalPrice.toLocaleString()} ل.س\n\n🙏 شكراً لطلبكم!`;
+        window.open(`https://wa.me/${restaurantWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
+        setTimeout(() => {
+            if (confirm('✅ تم فتح واتساب.\n\nهل تريد تفريغ السلة؟')) {
+                cart = []; updateCartUI(); closeCart();
+                document.getElementById('customer-name').value = '';
+                document.getElementById('customer-phone').value = '';
+                document.getElementById('customer-address').value = '';
+            }
+        }, 1500);
+    };
+
+    loadSettings();
+    loadMenu();
+</script>
+</body>
+</html>

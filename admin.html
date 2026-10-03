@@ -15,6 +15,7 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: var(--text-muted); }
         input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #2a2a2a; color: white; font-family: 'Cairo', sans-serif; }
+        textarea { resize: vertical; min-height: 60px; }
         button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-family: 'Cairo', sans-serif; cursor: pointer; }
         .btn-primary { background: var(--gold); color: #121212; }
         .btn-edit { background: var(--edit); color: #121212; width: auto; padding: 8px 15px; font-size: 0.9em; }
@@ -39,6 +40,17 @@
         .image-preview-box { display: none; margin-top: 10px; text-align: center; }
         .image-preview-box img { max-width: 100px; max-height: 100px; border-radius: 8px; border: 1px solid var(--gold); }
         .settings-section-title { color: var(--gold); font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; border-right: 4px solid var(--gold); padding-right: 10px; }
+        .email-display {
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--gold);
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.5px;
+            direction: ltr;
+        }
     </style>
 </head>
 <body>
@@ -47,8 +59,14 @@
     <div id="login-section">
         <h2>تسجيل دخول الأدمن</h2>
         <div id="login-message" class="message"></div>
-        <div class="form-group"><label>الإيميل</label><input type="email" id="email" placeholder="admin@alwaleed.com"></div>
-        <div class="form-group"><label>كلمة السر</label><input type="password" id="password" placeholder="********"></div>
+        <div class="form-group">
+            <label>الإيميل</label>
+            <div class="email-display">admin@alwaleed.com</div>
+        </div>
+        <div class="form-group">
+            <label>كلمة السر</label>
+            <input type="password" id="password" placeholder="********" autofocus>
+        </div>
         <button class="btn-primary" onclick="login()">دخول</button>
     </div>
 
@@ -102,6 +120,21 @@
                 <div class="settings-section-title">📍 الموقع</div>
                 <div class="form-group"><label>العنوان</label><input type="text" id="set-address" value="عدرا الصناعية - قطاع أول هندسية - السوق التجاري - جانب ماركت الوليد"></div>
                 <div class="form-group"><label>رابط الخريطة</label><input type="text" id="set-map" value="https://maps.google.com/?q=عدرا+الصناعية+دمشق"></div>
+                
+                <!-- قسم التوصيل -->
+                <div class="settings-section-title">🚚 التوصيل</div>
+                <div class="form-group">
+                    <label>نص ملاحظة التوصيل (يظهر للزبون في السلة)</label>
+                    <textarea id="set-delivery-note" placeholder="مثال: سعر التوصيل 5000 ل.س داخل عدرا، 10000 ل.س للمناطق البعيدة">سعر التوصيل يحدده المطعم حسب المنطقة</textarea>
+                </div>
+                <div class="form-group">
+                    <label>إظهار ملاحظة التوصيل للزبون؟</label>
+                    <select id="set-delivery-show">
+                        <option value="yes">✅ نعم، إظهارها</option>
+                        <option value="no">❌ لا، إخفاؤها</option>
+                    </select>
+                </div>
+                
                 <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px;">💾 حفظ الإعدادات</button>
             </div>
         </div>
@@ -120,11 +153,13 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    const ADMIN_EMAIL = "admin@alwaleed.com";
 
     const loginSection = document.getElementById('login-section');
     const dashboardSection = document.getElementById('dashboard-section');
@@ -133,44 +168,6 @@
     const itemsList = document.getElementById('items-list');
     let editingItemId = null;
     let uploadedImageBase64 = null;
-
-    // المنيو الافتراضي (يستخدم للتعبئة التلقائية فقط إذا كانت القاعدة فاضية)
-    const defaultMenu = [
-        { cat: "قسم المشاوي", name: "فروج مشوي على الفحم", price: 45000, desc: "فروج كامل مشوي على الفحم", img: "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "شيش طاووق مشوي", price: 30000, desc: "قطع دجاج متبلة مشوية", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "شيش طاووق أبيض", price: 32000, desc: "شيش طاووق بالصوص الأبيض", img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "كباب دجاج مشوي", price: 28000, desc: "أسياخ كباب دجاج مفروم", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "جناحات مشوية", price: 25000, desc: "أجنحة دجاج متبلة ومشوية", img: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "كستا مشوية", price: 30000, desc: "كستا دجاج مشوية", img: "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "كباب غنم", price: 40000, desc: "كباب لحم غنم مشوي", img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "شقف غنم", price: 45000, desc: "قطع لحم غنم مشوية", img: "https://images.unsplash.com/photo-1544025162-d76694265947?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "كبة مشوية", price: 20000, desc: "كبة برغل محشوة لحم", img: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=400&q=80" },
-        { cat: "قسم المشاوي", name: "معجوقة دجاج فاخرة", price: 35000, desc: "معجوقة دجاج فاخرة", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "فول باللبن", price: 15000, desc: "فول مدمس مع لبن", img: "https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "فول بالزيت والثوم", price: 12000, desc: "فول مدمس مع زيت وثوم", img: "https://images.unsplash.com/photo-1541518763669-27fef04b14ea?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "حمص حب باللبن", price: 15000, desc: "حمص حب مع لبن", img: "https://images.unsplash.com/photo-1637943943125-e8c1a5a1b9a0?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "حمص حب بالزيت والثوم", price: 12000, desc: "حمص حب مع زيت وثوم", img: "https://images.unsplash.com/photo-1637943943125-e8c1a5a1b9a0?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "مسيحة ناعمة", price: 15000, desc: "مسيحة ناعمة بالطحينة", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "فتة بالسمن الحيواني", price: 20000, desc: "فتة حمص مع سمن حيواني", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "فتة بالفقسة", price: 22000, desc: "فتة مع فقسة", img: "https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "متبل باذنجان مشوي", price: 13000, desc: "متبل باذنجان مشوي", img: "https://images.unsplash.com/photo-1601050690597-df0568f70950?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "بيض مسلوق", price: 10000, desc: "بيض مسلوق", img: "https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "بيض مقلي", price: 12000, desc: "بيض مقلي", img: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80" },
-        { cat: "قسم الفطور الدمشقي", name: "بيض ومرتديلا", price: 15000, desc: "بيض مع مرتديلا", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش بطاطا سمون", price: 10000, desc: "بطاطا مقلية مع صوص", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش بطاطا تشيز", price: 12000, desc: "بطاطا مقلية مع جبنة", img: "https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش فلافل عادي", price: 8000, desc: "فلافل مع خضار وطحينة", img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش فلافل اكسترا", price: 12000, desc: "فلافل مع جبنة ومخلل", img: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش سودة دجاج", price: 15000, desc: "سودة دجاج مع صوص", img: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش بيض مقلي", price: 10000, desc: "بيض مقلي مع خضار", img: "https://images.unsplash.com/photo-1482049016688-2d3e1b311543?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش مرتديلا و بيض", price: 13000, desc: "مرتديلا مع بيض", img: "https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش مرتديلا و قشقوان", price: 15000, desc: "مرتديلا مع جبنة قشقوان", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش كريسبي", price: 18000, desc: "دجاج كريسبي مقرمش", img: "https://images.unsplash.com/photo-1606755962773-d324e0a13086?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش طاووق", price: 17000, desc: "شيش طاووق مع ثومية", img: "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش كباب دجاج", price: 17000, desc: "كباب دجاج مشوي", img: "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش لبنة وزيتون", price: 8000, desc: "لبنة مع زيتون", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" },
-        { cat: "قسم السندويش", name: "سندويش لبنة بالزيت البلدي", price: 10000, desc: "لبنة مع زيت زيتون بلدي", img: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&q=80" }
-    ];
 
     function showMessage(element, text, type) {
         element.textContent = text;
@@ -186,52 +183,33 @@
     }
 
     window.login = async function() {
-        const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        try { await signInWithEmailAndPassword(auth, email, password); }
-        catch (error) { showMessage(loginMessage, 'خطأ في الإيميل أو كلمة السر', 'error'); }
+        if (!password) { showMessage(loginMessage, 'الرجاء إدخال كلمة السر', 'error'); return; }
+        try {
+            await signInWithEmailAndPassword(auth, ADMIN_EMAIL, password);
+        } catch (error) {
+            showMessage(loginMessage, 'كلمة السر غير صحيحة', 'error');
+        }
     }
+
+    document.getElementById('password').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') window.login();
+    });
 
     window.logout = function() { signOut(auth); }
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, (user) => {
         if (user) {
             loginSection.style.display = 'none';
             dashboardSection.style.display = 'block';
-            await autoSeedIfEmpty();
             loadItems();
             loadSettingsForEdit();
         } else {
             loginSection.style.display = 'block';
             dashboardSection.style.display = 'none';
+            document.getElementById('password').value = '';
         }
     });
-
-    // دالة التعبئة التلقائية الصامتة (فقط إذا كانت القاعدة فاضية)
-    async function autoSeedIfEmpty() {
-        try {
-            const snapshot = await getDocs(collection(db, "menu"));
-            if (snapshot.empty) {
-                console.log("القاعدة فارغة، جاري إضافة الأصناف الافتراضية...");
-                const batch = writeBatch(db);
-                for (const item of defaultMenu) {
-                    const newDocRef = doc(collection(db, "menu"));
-                    batch.set(newDocRef, {
-                        category: item.cat,
-                        name: item.name,
-                        price: item.price,
-                        description: item.desc,
-                        imageUrl: item.img,
-                        createdAt: new Date()
-                    });
-                }
-                await batch.commit();
-                console.log("تمت إضافة الأصناف الافتراضية بنجاح.");
-            }
-        } catch (error) {
-            console.error("خطأ في التعبئة التلقائية:", error);
-        }
-    }
 
     window.handleImageUpload = function(event) {
         const file = event.target.files[0];
@@ -349,8 +327,7 @@
 
     async function loadSettingsForEdit() {
         try {
-            const docRef = doc(db, "settings", "info");
-            const docSnap = await getDoc(docRef);
+            const docSnap = await getDoc(doc(db, "settings", "info"));
             if (docSnap.exists()) {
                 const s = docSnap.data();
                 document.getElementById('set-name').value = s.name || '';
@@ -362,6 +339,8 @@
                 document.getElementById('set-phone-call').value = s.phone || '';
                 document.getElementById('set-address').value = s.address || '';
                 document.getElementById('set-map').value = s.mapUrl || '';
+                document.getElementById('set-delivery-note').value = s.deliveryNote || 'سعر التوصيل يحدده المطعم حسب المنطقة';
+                document.getElementById('set-delivery-show').value = s.deliveryShow || 'yes';
             }
         } catch (error) { console.error(error); }
     }
@@ -376,7 +355,9 @@
             phone: document.getElementById('set-phone-call').value,
             phoneDisplay: document.getElementById('set-phone').value,
             address: document.getElementById('set-address').value,
-            mapUrl: document.getElementById('set-map').value
+            mapUrl: document.getElementById('set-map').value,
+            deliveryNote: document.getElementById('set-delivery-note').value,
+            deliveryShow: document.getElementById('set-delivery-show').value
         };
         try { await setDoc(doc(db, "settings", "info"), settingsData); showMessage(adminMessage, 'تم حفظ الإعدادات! ✅', 'success'); }
         catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }

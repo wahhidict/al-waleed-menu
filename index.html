@@ -111,8 +111,6 @@
         .customer-form h3 { color: var(--gold); margin-bottom: 15px; font-size: 1.1em; font-weight: 700; }
         .customer-form input, .customer-form textarea { width: 100%; padding: 14px; border-radius: 14px; border: 1px solid var(--border-color); background: rgba(42, 42, 52, 0.5); color: white; font-family: 'Tajawal', sans-serif; margin-bottom: 12px; outline: none; transition: all 0.3s; font-size: 0.95em; }
         .customer-form input:focus, .customer-form textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1); }
-
-        /* ✅ نص ملاحظة التوصيل */
         .delivery-note {
             background: rgba(66, 133, 244, 0.1);
             border: 1px solid rgba(66, 133, 244, 0.3);
@@ -127,7 +125,6 @@
             justify-content: center;
             gap: 8px;
         }
-
         .total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 18px; border-top: 2px solid var(--border-color); font-size: 1.3em; font-weight: 700; color: var(--gold); }
         .confirm-btn { width: 100%; background: linear-gradient(135deg, #25D366, #1ea952); color: white; border: none; padding: 16px; border-radius: 16px; font-family: 'Tajawal', sans-serif; font-size: 1.05em; font-weight: 700; cursor: pointer; margin-top: 18px; transition: all 0.3s; box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3); }
         .confirm-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(37, 211, 102, 0.4); }
@@ -210,8 +207,7 @@
         </div>
         <div id="cart-items-container"></div>
 
-        <!-- ✅ ملاحظة التوصيل -->
-        <div class="delivery-note" id="delivery-note" style="display: none;">
+        <div class="delivery-note" id="delivery-note-el" style="display: none;">
             🚚 سعر التوصيل يحدده المطعم حسب المنطقة
         </div>
 
@@ -251,14 +247,14 @@
     const menuContainer = document.getElementById('menu-container');
     const filtersContainer = document.getElementById('filters');
     const searchInput = document.getElementById('search-input');
+    const deliveryNoteEl = document.getElementById('delivery-note-el');
     let restaurantWhatsApp = "963949574237";
     let restaurantName = "مطعم الوليد";
     let cart = [];
     let allMenuItems = [];
     let currentFilter = "all";
-
-    // ✅ نص ملاحظة التوصيل (قابل للتغيير من هنا بسهولة)
-    const DELIVERY_NOTE = "سعر التوصيل يحدده المطعم حسب المنطقة";
+    let deliveryNote = "سعر التوصيل يحدده المطعم حسب المنطقة";
+    let deliveryShow = "yes";
 
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
@@ -298,6 +294,8 @@
                 const phoneLink = document.getElementById('footer-phone');
                 phoneLink.textContent = settings.phoneDisplay || '011 585 3701';
                 phoneLink.href = `tel:${settings.phoneCall || '+963115853701'}`;
+                deliveryNote = settings.deliveryNote || 'سعر التوصيل يحدده المطعم حسب المنطقة';
+                deliveryShow = settings.deliveryShow || 'yes';
             }
         } catch (error) { console.error(error); }
     }
@@ -429,10 +427,9 @@
 
     function renderCartItems() {
         const container = document.getElementById('cart-items-container');
-        const deliveryNote = document.getElementById('delivery-note');
         if (cart.length === 0) {
             container.innerHTML = '<div class="empty-cart">🛒 السلة فارغة</div>';
-            deliveryNote.style.display = 'none';
+            deliveryNoteEl.style.display = 'none';
             document.getElementById('customer-form').style.display = 'none';
             document.getElementById('total-row').style.display = 'none';
             document.getElementById('confirm-btn').style.display = 'none';
@@ -454,8 +451,12 @@
                 </div>`;
             container.appendChild(div);
         });
-        // ✅ إظهار ملاحظة التوصيل
-        deliveryNote.style.display = 'flex';
+        if (deliveryShow === 'yes' && deliveryNote.trim() !== '') {
+            deliveryNoteEl.textContent = '🚚 ' + deliveryNote;
+            deliveryNoteEl.style.display = 'flex';
+        } else {
+            deliveryNoteEl.style.display = 'none';
+        }
         document.getElementById('customer-form').style.display = 'block';
         document.getElementById('total-row').style.display = 'flex';
         document.getElementById('confirm-btn').style.display = 'block';
@@ -489,8 +490,9 @@
             message += `▪️ ${item.quantity} × ${item.name} = ${(item.price * item.quantity).toLocaleString()} ل.س\n`;
         });
         message += `━━━━━━━━━━━━━━━\n💰 *الإجمالي:* ${totalPrice.toLocaleString()} ل.س\n`;
-        // ✅ إضافة ملاحظة التوصيل لرسالة الواتساب
-        message += `\n🚚 *ملاحظة:* ${DELIVERY_NOTE}\n\n`;
+        if (deliveryShow === 'yes' && deliveryNote.trim() !== '') {
+            message += `\n🚚 *ملاحظة:* ${deliveryNote}\n\n`;
+        }
         message += `🙏 شكراً لطلبكم!`;
         window.open(`https://wa.me/${restaurantWhatsApp}?text=${encodeURIComponent(message)}`, '_blank');
         setTimeout(() => {

@@ -34,14 +34,13 @@
         .hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.65; filter: blur(1px) brightness(0.8); animation: slowZoom 20s ease-in-out infinite alternate; }
         @keyframes slowZoom { from { transform: scale(1); } to { transform: scale(1.08); } }
         .hero-content { position: relative; z-index: 2; text-align: center; }
-        .hero-badge { display: inline-block; background: rgba(212, 175, 55, 0.15); backdrop-filter: blur(10px); border: 1px solid var(--border-color); color: var(--gold); padding: 6px 16px; border-radius: 30px; font-size: 0.8em; font-weight: 500; letter-spacing: 1px; margin-bottom: 12px; animation: fadeInUp 0.6s ease both; }
-        .hero h1 { font-size: 2.6em; font-weight: 900; background: linear-gradient(135deg, #f0d264 0%, #d4af37 50%, #b8941f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; letter-spacing: -1px; animation: fadeInUp 0.6s 0.1s ease both; text-shadow: 0 4px 30px var(--gold-glow); }
-        .hero-subtitle { color: var(--text-muted); font-size: 0.95em; margin-bottom: 15px; animation: fadeInUp 0.6s 0.2s ease both; }
-        .hero-status { display: inline-flex; align-items: center; gap: 8px; background: rgba(46, 213, 115, 0.15); border: 1px solid rgba(46, 213, 115, 0.3); color: var(--success); padding: 6px 16px; border-radius: 30px; font-size: 0.85em; font-weight: 500; animation: fadeInUp 0.6s 0.3s ease both; }
+        .hero-badge { display: inline-block; background: rgba(212, 175, 55, 0.15); backdrop-filter: blur(10px); border: 1px solid var(--border-color); color: var(--gold); padding: 6px 16px; border-radius: 30px; font-size: 0.8em; font-weight: 500; letter-spacing: 1px; margin-bottom: 12px; }
+        .hero h1 { font-size: 2.6em; font-weight: 900; background: linear-gradient(135deg, #f0d264 0%, #d4af37 50%, #b8941f 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 8px; letter-spacing: -1px; text-shadow: 0 4px 30px var(--gold-glow); }
+        .hero-subtitle { color: var(--text-muted); font-size: 0.95em; margin-bottom: 15px; }
+        .hero-status { display: inline-flex; align-items: center; gap: 8px; background: rgba(46, 213, 115, 0.15); border: 1px solid rgba(46, 213, 115, 0.3); color: var(--success); padding: 6px 16px; border-radius: 30px; font-size: 0.85em; font-weight: 500; }
         .hero-status::before { content: ''; width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 2s infinite; }
         @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(46, 213, 115, 0.7); } 50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(46, 213, 115, 0); } }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .contact-bar { display: flex; gap: 12px; padding: 20px; max-width: 700px; margin: 0 auto; animation: fadeInUp 0.6s 0.4s ease both; }
+        .contact-bar { display: flex; gap: 12px; padding: 20px; max-width: 700px; margin: 0 auto; }
         .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 20px; border-radius: 16px; text-decoration: none; font-weight: 700; font-size: 0.95em; color: white; border: none; cursor: pointer; transition: all 0.3s; font-family: 'Tajawal', sans-serif; }
         .btn:active { transform: scale(0.97); }
         .btn-whatsapp { background: linear-gradient(135deg, #25D366, #1ea952); box-shadow: 0 8px 25px rgba(37, 211, 102, 0.3); }
@@ -204,14 +203,16 @@
     };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+
     const menuContainer = document.getElementById('menu-container');
     const filtersContainer = document.getElementById('filters');
     const searchInput = document.getElementById('search-input');
     const deliveryNoteEl = document.getElementById('delivery-note-el');
+
     let restaurantWhatsApp = "963949574237";
     let restaurantName = "مطعم الوليد";
     let cart = [];
@@ -229,95 +230,47 @@
         setTimeout(() => { toast.classList.add('out'); setTimeout(() => toast.remove(), 400); }, 2500);
     }
 
-    // ✅ دالة تخزين مؤقت ذكية: لا تخزن نتيجة فاضية، وتحذف الكاش القديم
-    async function getCachedData(key, fetchFunction, cacheDuration = 5 * 60 * 1000) {
-        const cached = localStorage.getItem(key);
-        const cachedTime = localStorage.getItem(key + '_time');
-        const now = Date.now();
+    // ✅ Real-time للإعدادات
+    onSnapshot(doc(db, "settings", "info"), (docSnap) => {
+        if (!docSnap.exists()) return;
+        const settings = docSnap.data();
+        restaurantName = settings.name || 'مطعم الوليد';
+        restaurantWhatsApp = settings.whatsapp || '963949574237';
+        document.getElementById('shop-name').textContent = restaurantName;
+        document.getElementById('shop-subtitle').textContent = settings.subtitle || 'عدرا الصناعية - قطاع أول هندسية';
+        document.getElementById('shop-status').textContent = settings.status || 'مفتوح الآن • يوجد توصيل';
+        document.getElementById('whatsapp-btn').href = `https://wa.me/${restaurantWhatsApp}`;
+        document.getElementById('map-btn').href = settings.mapUrl || 'https://maps.google.com/?q=عدرا+الصناعية+دمشق';
+        document.getElementById('footer-address').textContent = '📍 ' + (settings.address || 'عدرا الصناعية - قطاع أول هندسية');
+        const phoneLink = document.getElementById('footer-phone');
+        phoneLink.textContent = settings.phoneDisplay || '011 585 3701';
+        phoneLink.href = `tel:${settings.phoneCall || '+963115853701'}`;
+        deliveryNote = settings.deliveryNote || 'سعر التوصيل يحدده المطعم حسب المنطقة';
+        deliveryShow = settings.deliveryShow || 'yes';
+    }, (error) => {
+        console.error('Settings error:', error);
+    });
 
-        if (cached && cachedTime && (now - parseInt(cachedTime) < cacheDuration)) {
-            try {
-                const parsed = JSON.parse(cached);
-                // تحقق أن الكاش ليس فارغاً
-                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-                if (parsed && !Array.isArray(parsed) && typeof parsed === 'object' && Object.keys(parsed).length > 0) return parsed;
-                // إذا كان الكاش فارغاً، احذفه واذهب لجلب جديد
-                localStorage.removeItem(key);
-                localStorage.removeItem(key + '_time');
-            } catch (e) {
-                localStorage.removeItem(key);
-                localStorage.removeItem(key + '_time');
-            }
+    // ✅ Real-time للمنيو (وثيقة وحدة)
+    onSnapshot(doc(db, "menu", "all"), (docSnap) => {
+        if (!docSnap.exists() || !docSnap.data().items) {
+            menuContainer.innerHTML = '<div class="loader-msg">المنيو قيد التحديث...</div>';
+            return;
         }
+        allMenuItems = docSnap.data().items || [];
+        renderFilters();
+        applyFilters();
+    }, (error) => {
+        console.error('Menu error:', error);
+        menuContainer.innerHTML = '<div class="loader-msg" style="color:var(--danger);">حدث خطأ في التحميل.</div>';
+    });
 
-        try {
-            const freshData = await fetchFunction();
-            const isEmpty = !freshData ||
-                (Array.isArray(freshData) && freshData.length === 0) ||
-                (!Array.isArray(freshData) && typeof freshData === 'object' && Object.keys(freshData).length === 0);
-
-            if (!isEmpty) {
-                localStorage.setItem(key, JSON.stringify(freshData));
-                localStorage.setItem(key + '_time', now.toString());
-            }
-            return freshData;
-        } catch (error) {
-            console.error('Fetch error:', error);
-            if (cached) { try { return JSON.parse(cached); } catch (e) { return null; } }
-            return null;
-        }
-    }
-
-    async function loadSettings() {
-        try {
-            const settings = await getCachedData('alwaleed_settings_v3', async () => {
-                const docSnap = await getDoc(doc(db, "settings", "info"));
-                return docSnap.exists() ? docSnap.data() : null;
-            });
-            if (settings) {
-                restaurantName = settings.name || 'مطعم الوليد';
-                restaurantWhatsApp = settings.whatsapp || '963949574237';
-                document.getElementById('shop-name').textContent = restaurantName;
-                document.getElementById('shop-subtitle').textContent = settings.subtitle || 'عدرا الصناعية - قطاع أول هندسية';
-                document.getElementById('shop-status').textContent = settings.status || 'مفتوح الآن • يوجد توصيل';
-                document.getElementById('whatsapp-btn').href = `https://wa.me/${restaurantWhatsApp}`;
-                document.getElementById('map-btn').href = settings.mapUrl || 'https://maps.google.com/?q=عدرا+الصناعية+دمشق';
-                document.getElementById('footer-address').textContent = '📍 ' + (settings.address || 'عدرا الصناعية - قطاع أول هندسية');
-                const phoneLink = document.getElementById('footer-phone');
-                phoneLink.textContent = settings.phoneDisplay || '011 585 3701';
-                phoneLink.href = `tel:${settings.phoneCall || '+963115853701'}`;
-                deliveryNote = settings.deliveryNote || 'سعر التوصيل يحدده المطعم حسب المنطقة';
-                deliveryShow = settings.deliveryShow || 'yes';
-            }
-        } catch (error) { console.error(error); }
-    }
-
-    async function loadMenu() {
-        try {
-            allMenuItems = await getCachedData('alwaleed_menu_v3', async () => {
-                const q = query(collection(db, "menu"), orderBy("category"));
-                const querySnapshot = await getDocs(q);
-                const items = [];
-                querySnapshot.forEach((docSnap) => { items.push({ id: docSnap.id, ...docSnap.data() }); });
-                return items;
-            });
-
-            if (!allMenuItems || allMenuItems.length === 0) {
-                menuContainer.innerHTML = '<div class="loader-msg">المنيو قيد التحديث... يرجى تحديث الصفحة</div>';
-                return;
-            }
-
-            const categories = [...new Set(allMenuItems.map(i => i.category))];
-            filtersContainer.innerHTML = `<button class="filter-btn active" onclick="filterMenu('all', this)">🍽️ الكل</button>`;
-            categories.forEach(cat => {
-                filtersContainer.innerHTML += `<button class="filter-btn" onclick="filterMenu('${cat.replace(/'/g, "\\'")}', this)">${cat}</button>`;
-            });
-
-            renderMenu(allMenuItems);
-        } catch (error) {
-            console.error(error);
-            menuContainer.innerHTML = '<div class="loader-msg" style="color:var(--danger);">حدث خطأ في التحميل. يرجى تحديث الصفحة.</div>';
-        }
+    function renderFilters() {
+        const categories = [...new Set(allMenuItems.map(i => i.category))];
+        filtersContainer.innerHTML = `<button class="filter-btn active" onclick="filterMenu('all', this)">🍽️ الكل</button>`;
+        categories.forEach(cat => {
+            filtersContainer.innerHTML += `<button class="filter-btn" onclick="filterMenu('${cat.replace(/'/g, "\\'")}', this)">${cat}</button>`;
+        });
     }
 
     function renderMenu(items) {
@@ -491,9 +444,6 @@
 
     document.getElementById('cart-modal').addEventListener('click', (e) => { if (e.target.id === 'cart-modal') closeCart(); });
     document.getElementById('item-modal').addEventListener('click', (e) => { if (e.target.id === 'item-modal') closeItemDetail(); });
-
-    loadSettings();
-    loadMenu();
 </script>
 </body>
 </html>

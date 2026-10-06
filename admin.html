@@ -140,9 +140,8 @@
         appId: "1:93044767292:web:5f34dd396dd50c82bf6139"
     };
 
-    // ✅ إعدادات Cloudinary
-    const CLOUDINARY_CLOUD_NAME = "lxjejnqwn";
-    const CLOUDINARY_UPLOAD_PRESET = "alwaleed-menu";
+    const CLOUDINARY_CLOUD_NAME = "lxejnqwn";
+    const CLOUDINARY_UPLOAD_PRESET = "waleed";
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -204,7 +203,6 @@
         }
     });
 
-    // ✅ دالة رفع الصورة: تحول الصورة لـ Blob (مو Base64)
     window.handleImageUpload = function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -301,7 +299,6 @@
         } catch (error) { console.error(error); }
     }
 
-    // ✅ دالة الحفظ: ترفع الصورة على Cloudinary أولاً
     window.saveItem = async function() {
         const category = document.getElementById('item-category').value;
         const name = document.getElementById('item-name').value;
@@ -316,7 +313,6 @@
         
         let finalImage = '';
         
-        // حالة 1: صورة جديدة مرفوعة → ارفعيها على Cloudinary
         if (uploadedImageBlob) {
             try {
                 showMessage(adminMessage, '⏳ جاري رفع الصورة...', 'success');
@@ -337,11 +333,9 @@
                 return;
             }
         }
-        // حالة 2: رابط URL مباشر
         else if (imageUrlInput && imageUrlInput !== 'صورة مرفوعة') {
             finalImage = imageUrlInput;
         }
-        // حالة 3: تعديل صنف قديم بدون تغيير الصورة
         else if (editingItemId) {
             const oldDoc = await getDoc(doc(db, "menu", editingItemId));
             finalImage = oldDoc.data().imageUrl || '';

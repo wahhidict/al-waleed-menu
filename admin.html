@@ -110,7 +110,6 @@
                 <div class="settings-section-title">📍 الموقع</div>
                 <div class="form-group"><label>العنوان</label><input type="text" id="set-address" value="عدرا الصناعية - قطاع أول هندسية - السوق التجاري - جانب ماركت الوليد"></div>
                 <div class="form-group"><label>رابط الخريطة</label><input type="text" id="set-map" value="https://maps.google.com/?q=عدرا+الصناعية+دمشق"></div>
-                
                 <div class="settings-section-title">🚚 التوصيل</div>
                 <div class="form-group">
                     <label>نص ملاحظة التوصيل (يظهر للزبون في السلة)</label>
@@ -123,7 +122,6 @@
                         <option value="no">❌ لا، إخفاؤها</option>
                     </select>
                 </div>
-                
                 <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px;">💾 حفظ الإعدادات</button>
             </div>
         </div>
@@ -145,13 +143,15 @@
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
     const ADMIN_EMAIL = "admin@alwaleed.com";
+    const MENU_DOC = doc(db, "menu", "all");
+    const SETTINGS_DOC = doc(db, "settings", "info");
 
     const loginSection = document.getElementById('login-section');
     const dashboardSection = document.getElementById('dashboard-section');
@@ -160,11 +160,16 @@
     const itemsList = document.getElementById('items-list');
     let editingItemId = null;
     let uploadedImageBlob = null;
+    let currentItems = [];
 
     function showMessage(element, text, type) {
         element.textContent = text;
         element.className = 'message ' + type;
         setTimeout(() => { element.className = 'message'; }, 4000);
+    }
+
+    function generateId() {
+        return 'item_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
     }
 
     window.switchTab = function(tabName, btnElement) {
@@ -248,13 +253,29 @@
 
     async function loadItems() {
         itemsList.innerHTML = '<p style="text-align:center;">جاري التحميل...</p>';
-        const q = query(collection(db, "menu"), orderBy("category"));
-        const querySnapshot = await getDocs(q);
+        try {
+            const docSnap = await getDoc(MENU_DOC);
+            if (!docSnap.exists() || !docSnap.data().items) {
+                currentItems = [];
+                itemsList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">لا توجد أصناف بعد.</p>';
+                return;
+            }
+            currentItems = docSnap.data().items || [];
+            renderItems();
+        } catch (error) {
+            console.error(error);
+            itemsList.innerHTML = '<p style="text-align:center; color: var(--danger);">خطأ بالتحميل</p>';
+        }
+    }
+
+    function renderItems() {
         itemsList.innerHTML = '';
-        if (querySnapshot.empty) { itemsList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">لا توجد أصناف بعد.</p>'; return; }
-        querySnapshot.forEach((docSnap) => {
-            const item = docSnap.data();
-            const id = docSnap.id;
+        if (currentItems.length === 0) {
+            itemsList.innerHTML = '<p style="text-align:center; color: var(--text-muted);">لا توجد أصناف بعد.</p>';
+            return;
+        }
+        const sorted = [...currentItems].sort((a, b) => (a.category || '').localeCompare(b.category || ''));
+        sorted.forEach((item) => {
             const row = document.createElement('div');
             row.className = 'item-row';
             row.innerHTML = `
@@ -263,47 +284,43 @@
                     <div><strong>${item.name}</strong> <span style="color: var(--gold);">(${item.price} ل.س)</span><br><small style="color: var(--text-muted);">${item.category}</small></div>
                 </div>
                 <div class="item-actions">
-                    <button class="btn-edit" onclick="editItem('${id}')">تعديل</button>
-                    <button class="btn-danger" onclick="deleteItem('${id}')">حذف</button>
+                    <button class="btn-edit" onclick="editItem('${item.id}')">تعديل</button>
+                    <button class="btn-danger" onclick="deleteItem('${item.id}')">حذف</button>
                 </div>`;
             itemsList.appendChild(row);
         });
     }
 
     window.editItem = async function(id) {
-        try {
-            const docSnap = await getDoc(doc(db, "menu", id));
-            if (docSnap.exists()) {
-                const item = docSnap.data();
-                document.getElementById('item-category').value = item.category || '';
-                document.getElementById('item-name').value = item.name || '';
-                document.getElementById('item-price').value = item.price || '';
-                document.getElementById('item-desc').value = item.description || '';
-                if (item.imageUrl) {
-                    document.getElementById('preview-img').src = item.imageUrl;
-                    document.getElementById('image-preview').style.display = 'block';
-                    if (item.imageUrl.startsWith('data:image')) {
-                        document.getElementById('item-image').value = 'صورة مرفوعة';
-                    } else {
-                        document.getElementById('item-image').value = item.imageUrl;
-                    }
-                }
-                uploadedImageBlob = null;
-                editingItemId = id;
-                document.getElementById('form-title').textContent = 'تعديل: ' + item.name;
-                document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
-                document.getElementById('cancel-btn').style.display = 'block';
-                document.querySelectorAll('.tab-btn')[0].click();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+        const item = currentItems.find(i => i.id === id);
+        if (!item) return;
+        document.getElementById('item-category').value = item.category || '';
+        document.getElementById('item-name').value = item.name || '';
+        document.getElementById('item-price').value = item.price || '';
+        document.getElementById('item-desc').value = item.description || '';
+        if (item.imageUrl) {
+            document.getElementById('preview-img').src = item.imageUrl;
+            document.getElementById('image-preview').style.display = 'block';
+            if (item.imageUrl.startsWith('data:image')) {
+                document.getElementById('item-image').value = 'صورة مرفوعة';
+            } else {
+                document.getElementById('item-image').value = item.imageUrl;
             }
-        } catch (error) { console.error(error); }
-    }
+        }
+        uploadedImageBlob = null;
+        editingItemId = id;
+        document.getElementById('form-title').textContent = 'تعديل: ' + item.name;
+        document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
+        document.getElementById('cancel-btn').style.display = 'block';
+        document.querySelectorAll('.tab-btn')[0].click();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     window.saveItem = async function() {
-        const category = document.getElementById('item-category').value;
-        const name = document.getElementById('item-name').value;
+        const category = document.getElementById('item-category').value.trim();
+        const name = document.getElementById('item-name').value.trim();
         const price = document.getElementById('item-price').value;
-        const description = document.getElementById('item-desc').value;
+        const description = document.getElementById('item-desc').value.trim();
         const imageUrlInput = document.getElementById('item-image').value;
         
         if (!category || !name || !price) {
@@ -329,7 +346,7 @@
                 finalImage = data.secure_url;
             } catch (err) {
                 console.error(err);
-                showMessage(adminMessage, '❌ فشل رفع الصورة، حاول مرة تانية', 'error');
+                showMessage(adminMessage, '❌ فشل رفع الصورة', 'error');
                 return;
             }
         }
@@ -337,21 +354,31 @@
             finalImage = imageUrlInput;
         }
         else if (editingItemId) {
-            const oldDoc = await getDoc(doc(db, "menu", editingItemId));
-            finalImage = oldDoc.data().imageUrl || '';
+            const oldItem = currentItems.find(i => i.id === editingItemId);
+            finalImage = oldItem ? oldItem.imageUrl : '';
         }
         
-        const itemData = { category, name, price: parseInt(price), description, imageUrl: finalImage };
-        
+        // تحديث المصفوفة
         try {
+            const docSnap = await getDoc(MENU_DOC);
+            const items = docSnap.exists() && docSnap.data().items ? [...docSnap.data().items] : [];
+            
             if (editingItemId) {
-                await updateDoc(doc(db, "menu", editingItemId), itemData);
+                const idx = items.findIndex(i => i.id === editingItemId);
+                if (idx > -1) {
+                    items[idx] = { ...items[idx], category, name, price: parseInt(price), description, imageUrl: finalImage };
+                }
                 showMessage(adminMessage, '✅ تم تعديل الصنف!', 'success');
             } else {
-                itemData.createdAt = new Date();
-                await addDoc(collection(db, "menu"), itemData);
+                items.push({
+                    id: generateId(),
+                    category, name, price: parseInt(price), description, imageUrl: finalImage,
+                    createdAt: new Date()
+                });
                 showMessage(adminMessage, '✅ تم إضافة الصنف!', 'success');
             }
+            
+            await setDoc(MENU_DOC, { items, updatedAt: new Date() }, { merge: true });
             resetForm();
             loadItems();
         } catch (error) {
@@ -361,15 +388,24 @@
     };
 
     window.deleteItem = async function(id) {
-        if (confirm('تأكيد الحذف؟')) {
-            try { await deleteDoc(doc(db, "menu", id)); showMessage(adminMessage, 'تم الحذف', 'success'); if (editingItemId === id) resetForm(); loadItems(); }
-            catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }
+        if (!confirm('تأكيد الحذف؟')) return;
+        try {
+            const docSnap = await getDoc(MENU_DOC);
+            const items = docSnap.exists() && docSnap.data().items ? docSnap.data().items : [];
+            const newItems = items.filter(i => i.id !== id);
+            await setDoc(MENU_DOC, { items: newItems, updatedAt: new Date() }, { merge: true });
+            showMessage(adminMessage, 'تم الحذف', 'success');
+            if (editingItemId === id) resetForm();
+            loadItems();
+        } catch (error) {
+            console.error(error);
+            showMessage(adminMessage, '❌ حدث خطأ', 'error');
         }
-    }
+    };
 
     async function loadSettingsForEdit() {
         try {
-            const docSnap = await getDoc(doc(db, "settings", "info"));
+            const docSnap = await getDoc(SETTINGS_DOC);
             if (docSnap.exists()) {
                 const s = docSnap.data();
                 document.getElementById('set-name').value = s.name || '';
@@ -403,7 +439,7 @@
             updatedAt: new Date()
         };
         try {
-            await setDoc(doc(db, "settings", "info"), settingsData, { merge: true });
+            await setDoc(SETTINGS_DOC, settingsData, { merge: true });
             showMessage(adminMessage, '✅ تم حفظ الإعدادات!', 'success');
         } catch (error) {
             console.error(error);

@@ -34,7 +34,7 @@ const firebaseConfig = {
     appId: "1:93044767292:web:5f34dd396dd50c82bf6139"
 };
 const CLOUD_NAME = "lxjejnqwn";
-const UPLOAD_PRESET = "alwaleed_menu";
+const UPLOAD_PRESET = "alwaleed-menu";
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -82,7 +82,9 @@ window.start = async function() {
                 );
                 const data = await up.json();
                 
-                if (!data.secure_url) throw new Error('فشل الرفع');
+                if (!data.secure_url) {
+                    throw new Error(data.error?.message || 'فشل الرفع - ' + JSON.stringify(data));
+                }
                 
                 await updateDoc(doc(db, "menu", id), { imageUrl: data.secure_url });
                 log(`✅ [${counter}/${total}] تم: ${item.name}`, 'ok');

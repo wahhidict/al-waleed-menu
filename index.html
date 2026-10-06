@@ -311,13 +311,16 @@
 
     searchInput.addEventListener('input', applyFilters);
 
+    // ✅ الدالة المعدلة: ترتيب حسب القسم
     function applyFilters() {
         const searchTerm = searchInput.value.trim().toLowerCase();
-        let filtered = allMenuItems;
+        let filtered = [...allMenuItems];
         if (currentFilter !== 'all') { filtered = filtered.filter(i => i.category === currentFilter); }
         if (searchTerm) {
             filtered = filtered.filter(i => i.name.toLowerCase().includes(searchTerm) || (i.description && i.description.toLowerCase().includes(searchTerm)));
         }
+        // ✅ ترتيب حسب القسم (عربي)
+        filtered.sort((a, b) => (a.category || '').localeCompare(b.category || '', 'ar'));
         renderMenu(filtered);
     }
 

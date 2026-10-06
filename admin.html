@@ -1,3 +1,135 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم مطعم الوليد</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-color: #121212; --card-color: #1e1e1e; --gold: #d4af37; --text-main: #fff; --text-muted: #a0a0a0; --border-color: #2a2a2a; --danger: #dc3545; --success: #28a745; --edit: #0dcaf0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-color); color: var(--text-main); line-height: 1.6; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1, h2, h3 { color: var(--gold); text-align: center; margin-bottom: 20px; }
+        #login-section { max-width: 400px; margin: 80px auto; background: var(--card-color); padding: 30px; border-radius: 12px; border: 1px solid var(--border-color); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-muted); }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); background: #2a2a2a; color: white; font-family: 'Cairo', sans-serif; }
+        textarea { resize: vertical; min-height: 60px; }
+        button { width: 100%; padding: 12px; border-radius: 8px; border: none; font-weight: 700; font-family: 'Cairo', sans-serif; cursor: pointer; }
+        .btn-primary { background: var(--gold); color: #121212; }
+        .btn-edit { background: var(--edit); color: #121212; width: auto; padding: 8px 15px; font-size: 0.9em; }
+        .btn-danger { background: var(--danger); color: white; width: auto; padding: 8px 15px; font-size: 0.9em; }
+        .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 8px 15px; }
+        #dashboard-section { display: none; }
+        .dashboard-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
+        .tabs { display: flex; justify-content: center; gap: 10px; margin-bottom: 25px; }
+        .tab-btn { padding: 12px 25px; border-radius: 25px; border: 2px solid var(--border-color); background: transparent; color: var(--text-muted); font-family: 'Cairo', sans-serif; font-size: 1em; font-weight: 600; cursor: pointer; width: auto; }
+        .tab-btn.active { background: var(--gold); color: #121212; border-color: var(--gold); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .add-form { background: var(--card-color); padding: 20px; border-radius: 12px; margin-bottom: 30px; border: 1px solid var(--border-color); }
+        .items-list { display: flex; flex-direction: column; gap: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; background: var(--card-color); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .item-info { display: flex; align-items: center; gap: 15px; }
+        .item-info img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; }
+        .item-actions { display: flex; gap: 10px; }
+        .message { padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 15px; display: none; }
+        .message.success { background: rgba(40, 167, 69, 0.2); color: var(--success); display: block; }
+        .message.error { background: rgba(220, 53, 69, 0.2); color: var(--danger); display: block; }
+        .image-preview-box { display: none; margin-top: 10px; text-align: center; }
+        .image-preview-box img { max-width: 100px; max-height: 100px; border-radius: 8px; border: 1px solid var(--gold); }
+        .settings-section-title { color: var(--gold); font-size: 1.1em; margin-top: 20px; margin-bottom: 10px; border-right: 4px solid var(--gold); padding-right: 10px; }
+        .email-display { background: #2a2a2a; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; color: var(--gold); font-weight: 600; text-align: center; letter-spacing: 0.5px; direction: ltr; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="login-section">
+        <h2>تسجيل دخول الأدمن</h2>
+        <div id="login-message" class="message"></div>
+        <div class="form-group">
+            <label>الإيميل</label>
+            <div class="email-display">admin@alwaleed.com</div>
+        </div>
+        <div class="form-group">
+            <label>كلمة السر</label>
+            <input type="password" id="password" placeholder="********" autofocus>
+        </div>
+        <button class="btn-primary" onclick="login()">دخول</button>
+    </div>
+
+    <div id="dashboard-section">
+        <div class="dashboard-header">
+            <h2>إدارة مطعم الوليد</h2>
+            <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+        </div>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('items', this)">🍽️ الأصناف</button>
+            <button class="tab-btn" onclick="switchTab('settings', this)">⚙️ إعدادات المطعم</button>
+        </div>
+        <div id="admin-message" class="message"></div>
+
+        <div id="tab-items" class="tab-content active">
+            <div class="add-form">
+                <h3 id="form-title">إضافة صنف جديد</h3>
+                <div class="form-group"><label>القسم</label><input type="text" id="item-category" placeholder="اسم القسم"></div>
+                <div class="form-group"><label>اسم الطبق</label><input type="text" id="item-name" placeholder="اسم الطبق"></div>
+                <div class="form-group"><label>السعر (ل.س)</label><input type="number" id="item-price" placeholder="مثال: 25000"></div>
+                <div class="form-group"><label>الوصف (اختياري)</label><input type="text" id="item-desc" placeholder="وصف قصير"></div>
+                <div class="form-group" style="background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed var(--gold);">
+                    <label style="color: var(--gold); font-weight: bold;">📸 صورة الطبق</label>
+                    <label style="font-size: 0.9em; color: var(--text-muted);">الخيار 1: اختر صورة من جوالك</label>
+                    <input type="file" id="item-image-file" accept="image/*" onchange="handleImageUpload(event)" style="padding: 8px; background: #2a2a2a;">
+                    <div id="image-preview" class="image-preview-box"><p style="color: var(--success); font-size: 0.8em;">✅ تم اختيار الصورة</p><img id="preview-img" src="" alt="معاينة"></div>
+                    <label style="font-size: 0.9em; color: var(--text-muted); margin-top: 10px;">الخيار 2: أو الصق رابط صورة</label>
+                    <input type="text" id="item-image" placeholder="https://i.postimg.cc/xxxxx/image.jpg">
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" id="submit-btn" onclick="saveItem()">إضافة الصنف</button>
+                    <button class="btn-logout" id="cancel-btn" onclick="cancelEdit()" style="display:none; color: #fff; border-color: #fff;">إلغاء</button>
+                </div>
+            </div>
+            <h3>الأصناف الحالية</h3>
+            <div class="items-list" id="items-list"></div>
+        </div>
+
+        <div id="tab-settings" class="tab-content">
+            <div class="add-form">
+                <h3>تعديل معلومات المطعم</h3>
+                <div class="settings-section-title">🏪 المعلومات الأساسية</div>
+                <div class="form-group"><label>اسم المطعم</label><input type="text" id="set-name" value="مطعم الوليد"></div>
+                <div class="form-group"><label>الفرع</label><input type="text" id="set-subtitle" value="عدرا الصناعية - قطاع أول هندسية"></div>
+                <div class="form-group"><label>حالة المطعم</label><input type="text" id="set-status" value="مفتوح الآن • يوجد توصيل دليفري"></div>
+                <div class="settings-section-title">📞 التواصل</div>
+                <div class="form-group"><label>رقم الواتساب (للطلب - بدون + وبدون أصفار)</label><input type="text" id="set-whatsapp" value="963949574237"></div>
+                <div class="form-group"><label>رقم الواتساب (للعرض)</label><input type="text" id="set-whatsapp-display" value="0949 574 237"></div>
+                <div class="form-group"><label>رقم الهاتف الأرضي (للعرض)</label><input type="text" id="set-phone" value="011 585 3701"></div>
+                <div class="form-group"><label>رقم الهاتف للاتصال المباشر</label><input type="text" id="set-phone-call" value="+963115853701"></div>
+                <div class="settings-section-title">📍 الموقع</div>
+                <div class="form-group"><label>العنوان</label><input type="text" id="set-address" value="عدرا الصناعية - قطاع أول هندسية - السوق التجاري - جانب ماركت الوليد"></div>
+                <div class="form-group"><label>رابط الخريطة</label><input type="text" id="set-map" value="https://maps.google.com/?q=عدرا+الصناعية+دمشق"></div>
+                
+                <div class="settings-section-title">🚚 التوصيل</div>
+                <div class="form-group">
+                    <label>نص ملاحظة التوصيل (يظهر للزبون في السلة)</label>
+                    <textarea id="set-delivery-note" placeholder="مثال: سعر التوصيل 5000 ل.س داخل عدرا، 10000 ل.س للمناطق البعيدة">سعر التوصيل يحدده المطعم حسب المنطقة</textarea>
+                </div>
+                <div class="form-group">
+                    <label>إظهار ملاحظة التوصيل للزبون؟</label>
+                    <select id="set-delivery-show">
+                        <option value="yes">✅ نعم، إظهارها</option>
+                        <option value="no">❌ لا، إخفاؤها</option>
+                    </select>
+                </div>
+                
+                <button class="btn-primary" onclick="saveSettings()" style="margin-top: 20px;">💾 حفظ الإعدادات</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script type="module">
     const firebaseConfig = {
         apiKey: "AIzaSyAi_NnPfUwHPVQcmHMm9vKIYjbJWuzBqms",
@@ -9,8 +141,8 @@
     };
 
     // ✅ إعدادات Cloudinary
-    const CLOUD_NAME = 'lxjejnqwn';
-    const UPLOAD_PRESET = 'alwaleed_menu';
+    const CLOUDINARY_CLOUD_NAME = "lxjejnqwn";
+    const CLOUDINARY_UPLOAD_PRESET = "alwaleed_menu";
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -29,7 +161,6 @@
     const itemsList = document.getElementById('items-list');
     let editingItemId = null;
     let uploadedImageBlob = null;
-    let uploadedImageUrl = null;
 
     function showMessage(element, text, type) {
         element.textContent = text;
@@ -73,7 +204,7 @@
         }
     });
 
-    // ✅ دالة رفع الصورة: نحولها Blob بدل Base64
+    // ✅ دالة رفع الصورة: تحول الصورة لـ Blob (مو Base64)
     window.handleImageUpload = function(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -88,10 +219,8 @@
                 else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                 canvas.width = width; canvas.height = height;
                 canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-
                 canvas.toBlob(function(blob) {
                     uploadedImageBlob = blob;
-                    uploadedImageUrl = null;
                     document.getElementById('preview-img').src = URL.createObjectURL(blob);
                     document.getElementById('image-preview').style.display = 'block';
                     document.getElementById('item-image').value = '';
@@ -111,7 +240,6 @@
         document.getElementById('item-image-file').value = '';
         document.getElementById('image-preview').style.display = 'none';
         uploadedImageBlob = null;
-        uploadedImageUrl = null;
         editingItemId = null;
         document.getElementById('form-title').textContent = 'إضافة صنف جديد';
         document.getElementById('submit-btn').textContent = 'إضافة الصنف';
@@ -153,15 +281,16 @@
                 document.getElementById('item-name').value = item.name || '';
                 document.getElementById('item-price').value = item.price || '';
                 document.getElementById('item-desc').value = item.description || '';
-                if (item.imageUrl && item.imageUrl.startsWith('http')) {
-                    document.getElementById('item-image').value = item.imageUrl;
+                if (item.imageUrl) {
                     document.getElementById('preview-img').src = item.imageUrl;
                     document.getElementById('image-preview').style.display = 'block';
-                } else {
-                    document.getElementById('item-image').value = '';
+                    if (item.imageUrl.startsWith('data:image')) {
+                        document.getElementById('item-image').value = 'صورة مرفوعة';
+                    } else {
+                        document.getElementById('item-image').value = item.imageUrl;
+                    }
                 }
                 uploadedImageBlob = null;
-                uploadedImageUrl = null;
                 editingItemId = id;
                 document.getElementById('form-title').textContent = 'تعديل: ' + item.name;
                 document.getElementById('submit-btn').textContent = 'حفظ التعديلات';
@@ -172,55 +301,54 @@
         } catch (error) { console.error(error); }
     }
 
-    // ✅ دالة رفع الصورة على Cloudinary
-    async function uploadToCloudinary(blob) {
-        const formData = new FormData();
-        formData.append('file', blob);
-        formData.append('upload_preset', UPLOAD_PRESET);
-        const res = await fetch(
-            `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
-            { method: 'POST', body: formData }
-        );
-        const data = await res.json();
-        if (!data.secure_url) throw new Error('فشل رفع الصورة');
-        return data.secure_url;
-    }
-
+    // ✅ دالة الحفظ: ترفع الصورة على Cloudinary أولاً
     window.saveItem = async function() {
         const category = document.getElementById('item-category').value;
         const name = document.getElementById('item-name').value;
         const price = document.getElementById('item-price').value;
         const description = document.getElementById('item-desc').value;
         const imageUrlInput = document.getElementById('item-image').value;
-
+        
         if (!category || !name || !price) {
             showMessage(adminMessage, 'يرجى ملء الحقول الإجبارية', 'error');
             return;
         }
-
+        
         let finalImage = '';
-
+        
+        // حالة 1: صورة جديدة مرفوعة → ارفعيها على Cloudinary
         if (uploadedImageBlob) {
             try {
                 showMessage(adminMessage, '⏳ جاري رفع الصورة...', 'success');
-                finalImage = await uploadToCloudinary(uploadedImageBlob);
-                uploadedImageUrl = finalImage;
+                const formData = new FormData();
+                formData.append('file', uploadedImageBlob);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                
+                const res = await fetch(
+                    `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+                    { method: 'POST', body: formData }
+                );
+                const data = await res.json();
+                if (!data.secure_url) throw new Error('فشل الرفع');
+                finalImage = data.secure_url;
             } catch (err) {
                 console.error(err);
-                showMessage(adminMessage, '❌ فشل رفع الصورة، حاول مرة أخرى', 'error');
+                showMessage(adminMessage, '❌ فشل رفع الصورة، حاول مرة تانية', 'error');
                 return;
             }
         }
-        else if (imageUrlInput && imageUrlInput.startsWith('http')) {
+        // حالة 2: رابط URL مباشر
+        else if (imageUrlInput && imageUrlInput !== 'صورة مرفوعة') {
             finalImage = imageUrlInput;
         }
+        // حالة 3: تعديل صنف قديم بدون تغيير الصورة
         else if (editingItemId) {
             const oldDoc = await getDoc(doc(db, "menu", editingItemId));
             finalImage = oldDoc.data().imageUrl || '';
         }
-
+        
         const itemData = { category, name, price: parseInt(price), description, imageUrl: finalImage };
-
+        
         try {
             if (editingItemId) {
                 await updateDoc(doc(db, "menu", editingItemId), itemData);
@@ -236,7 +364,7 @@
             console.error(error);
             showMessage(adminMessage, '❌ حدث خطأ', 'error');
         }
-    }
+    };
 
     window.deleteItem = async function(id) {
         if (confirm('تأكيد الحذف؟')) {
@@ -255,11 +383,11 @@
                 document.getElementById('set-status').value = s.status || '';
                 document.getElementById('set-whatsapp').value = s.whatsapp || '';
                 document.getElementById('set-whatsapp-display').value = s.whatsappDisplay || '';
-                document.getElementById('set-phone').value = s.phoneDisplay || '';
-                document.getElementById('set-phone-call').value = s.phone || '';
+                document.getElementById('set-phone').value = s.phone || '';
+                document.getElementById('set-phone-call').value = s.phoneCall || '';
                 document.getElementById('set-address').value = s.address || '';
                 document.getElementById('set-map').value = s.mapUrl || '';
-                document.getElementById('set-delivery-note').value = s.deliveryNote || 'سعر التوصيل يحدده المطعم حسب المنطقة';
+                document.getElementById('set-delivery-note').value = s.deliveryNote || '';
                 document.getElementById('set-delivery-show').value = s.deliveryShow || 'yes';
             }
         } catch (error) { console.error(error); }
@@ -272,14 +400,22 @@
             status: document.getElementById('set-status').value,
             whatsapp: document.getElementById('set-whatsapp').value,
             whatsappDisplay: document.getElementById('set-whatsapp-display').value,
-            phone: document.getElementById('set-phone-call').value,
-            phoneDisplay: document.getElementById('set-phone').value,
+            phone: document.getElementById('set-phone').value,
+            phoneCall: document.getElementById('set-phone-call').value,
             address: document.getElementById('set-address').value,
             mapUrl: document.getElementById('set-map').value,
             deliveryNote: document.getElementById('set-delivery-note').value,
-            deliveryShow: document.getElementById('set-delivery-show').value
+            deliveryShow: document.getElementById('set-delivery-show').value,
+            updatedAt: new Date()
         };
-        try { await setDoc(doc(db, "settings", "info"), settingsData); showMessage(adminMessage, 'تم حفظ الإعدادات! ✅', 'success'); }
-        catch (error) { showMessage(adminMessage, 'حدث خطأ', 'error'); }
-    }
+        try {
+            await setDoc(doc(db, "settings", "info"), settingsData, { merge: true });
+            showMessage(adminMessage, '✅ تم حفظ الإعدادات!', 'success');
+        } catch (error) {
+            console.error(error);
+            showMessage(adminMessage, '❌ حدث خطأ', 'error');
+        }
+    };
 </script>
+</body>
+</html>
